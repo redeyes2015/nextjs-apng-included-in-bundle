@@ -143,7 +143,7 @@ function getInt(x) {
 }
 // See https://stackoverflow.com/q/39777833/266535 for why we use this ref
 // handler instead of the img's onLoad attribute.
-function handleLoading(img, src, onLoadRef, onLoadingCompleteRef, unoptimized) {
+function handleLoading(img, src, placeholder, onLoadRef, onLoadingCompleteRef, setBlurComplete, unoptimized) {
     if (!img || img["data-loaded-src"] === src) {
         return;
     }
@@ -157,6 +157,9 @@ function handleLoading(img, src, onLoadRef, onLoadingCompleteRef, unoptimized) {
             // - unmount is called
             // - decode() completes
             return;
+        }
+        if (placeholder === "blur") {
+            setBlurComplete(true);
         }
         if (onLoadRef == null ? void 0 : onLoadRef.current) {
             // Since we don't have the SyntheticEvent here,
@@ -193,7 +196,7 @@ function handleLoading(img, src, onLoadRef, onLoadingCompleteRef, unoptimized) {
     });
 }
 const ImageElement = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)=>{
-    var { imgAttributes , heightInt , widthInt , qualityInt , className , imgStyle , blurStyle , isLazy , fill , placeholder , loading , srcString , config , unoptimized , loader , onLoadRef , onLoadingCompleteRef , onLoad , onError  } = _param, rest = _object_without_properties_loose(_param, [
+    var { imgAttributes , heightInt , widthInt , qualityInt , className , imgStyle , blurStyle , isLazy , fill , placeholder , loading , srcString , config , unoptimized , loader , onLoadRef , onLoadingCompleteRef , setBlurComplete , setShowAltText , onLoad , onError  } = _param, rest = _object_without_properties_loose(_param, [
         "imgAttributes",
         "heightInt",
         "widthInt",
@@ -211,6 +214,8 @@ const ImageElement = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)
         "loader",
         "onLoadRef",
         "onLoadingCompleteRef",
+        "setBlurComplete",
+        "setShowAltText",
         "onLoad",
         "onError"
     ]);
@@ -244,35 +249,28 @@ const ImageElement = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)
             }
             if (false) {}
             if (img.complete) {
-                handleLoading(img, srcString, onLoadRef, onLoadingCompleteRef, unoptimized);
+                handleLoading(img, srcString, placeholder, onLoadRef, onLoadingCompleteRef, setBlurComplete, unoptimized);
             }
         }, [
             srcString,
+            placeholder,
             onLoadRef,
             onLoadingCompleteRef,
+            setBlurComplete,
             onError,
             unoptimized,
             forwardedRef
         ]),
         onLoad: (event)=>{
             const img = event.currentTarget;
-            handleLoading(img, srcString, onLoadRef, onLoadingCompleteRef, unoptimized);
+            handleLoading(img, srcString, placeholder, onLoadRef, onLoadingCompleteRef, setBlurComplete, unoptimized);
         },
         onError: (event)=>{
-            // Note: We removed React.useState() in the error case here
-            // because it was causing Safari to become very slow when
-            // there were many images on the same page.
-            const { style  } = event.currentTarget;
-            if (style.color === "transparent") {
-                // If src image fails to load, this will ensure "alt" is visible
-                style.color = "";
-            }
-            if (placeholder === "blur" && style.backgroundImage) {
-                // If src image fails to load, this will ensure the placeholder is removed
-                style.backgroundSize = "";
-                style.backgroundPosition = "";
-                style.backgroundRepeat = "";
-                style.backgroundImage = "";
+            // if the real image fails to load, this will ensure "alt" is visible
+            setShowAltText(true);
+            if (placeholder === "blur") {
+                // If the real image fails to load, this will still remove the placeholder.
+                setBlurComplete(true);
             }
             if (onError) {
                 onError(event);
@@ -408,6 +406,8 @@ const Image = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)=>{
     if (config.unoptimized) {
         unoptimized = true;
     }
+    const [blurComplete, setBlurComplete] = (0, _react).useState(false);
+    const [showAltText, setShowAltText] = (0, _react).useState(false);
     const qualityInt = getInt(quality);
     if (false) {}
     const imgStyle = Object.assign(fill ? {
@@ -420,10 +420,10 @@ const Image = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)=>{
         bottom: 0,
         objectFit,
         objectPosition
-    } : {}, {
+    } : {}, showAltText ? {} : {
         color: "transparent"
     }, style);
-    const blurStyle = placeholder === "blur" && blurDataURL ? {
+    const blurStyle = placeholder === "blur" && blurDataURL && !blurComplete ? {
         backgroundSize: imgStyle.objectFit || "cover",
         backgroundPosition: imgStyle.objectPosition || "50% 50%",
         backgroundRepeat: "no-repeat",
@@ -482,7 +482,9 @@ const Image = /*#__PURE__*/ (0, _react).forwardRef((_param, forwardedRef)=>{
         loader,
         srcString,
         onLoadRef,
-        onLoadingCompleteRef
+        onLoadingCompleteRef,
+        setBlurComplete,
+        setShowAltText
     }, rest);
     return /*#__PURE__*/ _react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/ _react.default.createElement(ImageElement, Object.assign({}, imgElementArgs, {
         ref: forwardedRef

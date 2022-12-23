@@ -489,8 +489,8 @@ var _hasBasePath = __webpack_require__(928);
 var _appRouterContext = __webpack_require__(8245);
 var _adapters = __webpack_require__(401);
 var _hooksClientContext = __webpack_require__(8914);
-var _noSsrError = __webpack_require__(2983);
-const version = "13.0.7";
+var _onRecoverableError = _interop_require_default(__webpack_require__(6954));
+const version = "13.0.8-canary.5";
 exports.version = version;
 let router;
 exports.router = router;
@@ -762,11 +762,7 @@ function renderReactElement(domEl, fn) {
     if (!reactRoot) {
         // Unlike with createRoot, you don't need a separate root.render() call here
         reactRoot = _client.default.hydrateRoot(domEl, reactEl, {
-            onRecoverableError (err) {
-                // Skip certain custom errors which are not expected to throw on client
-                if (err.message === _noSsrError.NEXT_DYNAMIC_NO_SSR_CODE) return;
-                throw err;
-            }
+            onRecoverableError: _onRecoverableError.default
         });
         // TODO: Remove shouldHydrate variable when React 18 is stable as it can depend on `reactRoot` existing
         shouldHydrate = false;
@@ -1089,6 +1085,38 @@ if ((typeof exports.default === "function" || typeof exports.default === "object
 
 /***/ }),
 
+/***/ 6954:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({
+    value: true
+}));
+exports["default"] = onRecoverableError;
+var _noSsrError = __webpack_require__(2983);
+function onRecoverableError(err, errorInfo) {
+    const digest = err.digest || errorInfo.digest;
+    // Using default react onRecoverableError
+    // x-ref: https://github.com/facebook/react/blob/d4bc16a7d69eb2ea38a88c8ac0b461d5f72cdcab/packages/react-dom/src/client/ReactDOMRoot.js#L83
+    const defaultOnRecoverableError = typeof reportError === "function" ? reportError : (error)=>{
+        window.console.error(error);
+    };
+    // Skip certain custom errors which are not expected to be reported on client
+    if (digest === _noSsrError.NEXT_DYNAMIC_NO_SSR_CODE) return;
+    defaultOnRecoverableError(err);
+}
+if ((typeof exports.default === "function" || typeof exports.default === "object" && exports.default !== null) && typeof exports.default.__esModule === "undefined") {
+    Object.defineProperty(exports.default, "__esModule", {
+        value: true
+    });
+    Object.assign(exports.default, exports);
+    module.exports = exports.default;
+} //# sourceMappingURL=on-recoverable-error.js.map
+
+
+/***/ }),
+
 /***/ 976:
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1134,9 +1162,7 @@ class PageLoader {
         };
         return getHrefForSlug(params.skipInterpolation ? asPathname : (0, _isDynamic).isDynamicRoute(route) ? (0, _router).interpolateAs(hrefPathname, asPathname, query).result : route);
     }
-    /**
-   * @param {string} route - the route (file-system path)
-   */ _isSsg(route) {
+    _isSsg(/** the route (file-system path) */ route) {
         return this.promisedSsgManifest.then((manifest)=>manifest.has(route));
     }
     loadPage(route) {
