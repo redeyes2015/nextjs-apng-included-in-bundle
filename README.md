@@ -1,5 +1,5 @@
 This repo is to demo an issue that the default setting of Next.js would embed full size apng file into the js bundle.
-Check [this line](https://github.com/redeyes2015/nextjs-apng-included-in-bundle/blob/main/.next/static/chunks/pages/index-3c90a1479935e813.js#L592), the `blurDataURL` is actually the full content of `elephant.png` base64-encoded.
+Check [this line](https://github.com/redeyes2015/nextjs-apng-included-in-bundle/blob/main/.next/static/chunks/pages/index-ba8532a9e3cc1863.js#L594), the `blurDataURL` is actually the full content of `elephant.png` base64-encoded.
 We happen to have a few apng images in one page, resulting that the page chunk is bloated with the content of the image files.
 We have to use `disableStaticImages: true` and `file-loader` to work-around this issue.
 
